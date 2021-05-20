@@ -32,11 +32,12 @@ params.patchSize = 50;                                                     % Cho
 
 Xsel = 151:350;                                                            % Can sub-select a portion of the full FOV to test on a small section before running on the full dataset
 Ysel = 201:400;                                                            % ...
+motion_correct = false;
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% Set up paths & misc startups
 
-addpath(genpath('.'))                                                      % Add all the files
+addpath(genpath('.'))                                                      % Add all the files in the repo
 if isempty(gcp('nocreate')); parpool(16,'IdleTimeout',5000); end           % If no parpool, make one
 RandStream.setGlobalStream(RandStream('mt19937ar'));                       % Set the random stream
 
@@ -44,20 +45,22 @@ RandStream.setGlobalStream(RandStream('mt19937ar'));                       % Set
 %% Download and load NeuroFinder data
 
 fprintf('Loading Neurofinder data...\n')
-data.nam = 'neurofinder.02.00';
-if ~exist(data.nam,'file')                                                  % download file if it doesn't exist in the directory
+data.nam = 'neurofinder.02.00';                                            % Create the name of the data to check for
+if ~exist(data.nam,'file')                                                 % download file if it doesn't exist in the directory
+    fprintf('Neurofinder data not detected, downloading data now...\n')
     url         = 'https://s3.amazonaws.com/neuro.datasets/challenges/neurofinder/neurofinder.02.00.zip';
     filename    = 'neurofinder.02.00.zip';
     outfilename = websave(filename,url);
     unzip(filename);
-    clear url filename
+    clear url filename                                                     % Clear un-needed variables
 end
  
-data.dirname = fullfile(data.nam, 'images');
-data.files   = dir(fullfile(data.dirname,'*.tiff'));
-data.fname   = fullfile(data.dirname, data.files(1).name);
-data.Fsim    = imread(data.fname);
-data.Fsim    = zeros(size(data.Fsim,1),size(data.Fsim,2),length(files));
+data.dirname = fullfile(data.nam, 'images');                               % Get the directory name
+data.files   = dir(fullfile(data.dirname,'*.tiff'));                       % Get all of  the filenames (look for tiff files)
+data.fname   = fullfile(data.dirname, data.files(1).name);                 % Create a full-file name to point to the first file (used to get movie sizes)
+data.Fsim    = imread(data.fname);                                         % Read in the first file
+data.Fsim    = zeros(size(data.Fsim,1),size(data.Fsim,2),...
+                                                    length(data.files));   % Initialize the data array
  
 for ll = 1:length(data.files)
     fname = fullfile(data.dirname, data.files(ll).name);
