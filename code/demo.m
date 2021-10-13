@@ -38,7 +38,6 @@ motion_correct = false;
 %% Set up paths & misc startups
 
 addpath(genpath('.')) 
-addpath(genpath('D:\JHU\OneDrive - Johns Hopkins\Widefield\MovieSlider-master'));
 % Add all the files in the repo
 if isempty(gcp('nocreate')); parpool(16,'IdleTimeout',5000); end           % If no parpool, make one
 RandStream.setGlobalStream(RandStream('mt19937ar'));                       % Set the random stream
@@ -156,7 +155,7 @@ Sthresh = S;
 for ll = 1:size(Sthresh,3)
     Sthresh(:,:,ll) = Sthresh(:,:,ll).*(Sthresh(:,:,ll) > 0.05*max(max(Sthresh(:,:,ll),[],1), [], 2));
 end
-% MovieSlider(Sthresh);
+MovieSlider(Sthresh);
 
 clear ll 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
