@@ -202,7 +202,7 @@ function [params, lambda, beta, maxiter, tolerance, nonneg, verbose, ...
        dParams.maxiter       = 0.01;                                       % Default the maximum iteration 
        dParams.numreps       = 2;
        dParams.tolerance     = 1e-8;
-       dParams.nonneg        = false;
+       dParams.nonneg        = true;
        dParams.verbose       = 10;
        dParams.updateEmbed   = false;
        dParams.likely_form   = 'gaussian';

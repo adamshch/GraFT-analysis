@@ -22,7 +22,7 @@
 % This first block sets up the basic parameters 
 
 saveDir  = '.';                                                            % Set the path where the output should be saved to
-usePatch = true;                                                           % Select if patchGraFT or regular GraFT should be used. For bigger field-of-views (>150 pix X 150 pix), patchGraFT is recommended
+usePatch = false;                                                           % Select if patchGraFT or regular GraFT should be used. For bigger field-of-views (>150 pix X 150 pix), patchGraFT is recommended
 
 params.lambda    = 0.05;                                                   % Sparsity parameter
 params.lamForb   = 0.2;                                                    % parameter to control how much to weigh extra time-traces
@@ -37,7 +37,9 @@ motion_correct = false;
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% Set up paths & misc startups
 
-addpath(genpath('.'))                                                      % Add all the files in the repo
+addpath(genpath('.')) 
+addpath(genpath('D:\JHU\OneDrive - Johns Hopkins\Widefield\MovieSlider-master'));
+% Add all the files in the repo
 if isempty(gcp('nocreate')); parpool(16,'IdleTimeout',5000); end           % If no parpool, make one
 RandStream.setGlobalStream(RandStream('mt19937ar'));                       % Set the random stream
 
@@ -140,12 +142,12 @@ if params.normalizeSpatial
 else
     normType = 'temporal';
 end
-saveName = sprintf('nfRun_%d_%d_%d_%d_%d_%s.mat', ...
+saveName = sprintf('nfRun_%d_%d_%d_%d_%s.mat', ...
                    round(100*params.lambda), round(100*params.lamForb),...
                     round(100*params.lamCorr), round(100*params.lamCont),...
-                    K, normType); % Set the save name to store results in
+                    normType); % Set the save name to store results in
 fprintf('Saving results to %s...\n', saveName)
-save([saveDir,saveName],'S','D','R2','params','-v7.3')  % Save the results
+save(fullfile(saveDir,saveName),'S','D','params','-v7.3')  % Save the results
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% Plot the results
@@ -154,7 +156,7 @@ Sthresh = S;
 for ll = 1:size(Sthresh,3)
     Sthresh(:,:,ll) = Sthresh(:,:,ll).*(Sthresh(:,:,ll) > 0.05*max(max(Sthresh(:,:,ll),[],1), [], 2));
 end
-MovieSlider(Sthresh);
+% MovieSlider(Sthresh);
 
 clear ll 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

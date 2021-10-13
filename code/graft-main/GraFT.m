@@ -191,14 +191,14 @@ function params = checkAllParameters(params)
     dParams.step_s      = 1;                                               % Default step to reduce the step size over time (only needed for grad_type = 'norm')
     dParams.step_decay  = 0.995;                                           % Default step size decay (only needed for grad_type = 'norm')
     dParams.max_learn   = 1e3;                                             % Maximum number of steps in learning is 1000 
-    dParams.learn_eps   = 1e-3;                                            % Default learning tolerance: stop when Delta(Dictionary)<0.01
+    dParams.learn_eps   = 0.01;                                            % Default learning tolerance: stop when Delta(Dictionary)<0.01
 %    dParams.n_dict      = selectDictSize(data_obj);                        % Default number of dictionary elements is a function of the data
     dParams.verb        = 1;                                               % Default to no verbose output
     dParams.grad_type   = 'full_ls_cor';                                   % Default to optimizing a full optimization on all dictionary elements at each iteration
     dParams.GD_iters    = 1;                                               % Default to one GD step per iteration
     dParams.bshow       = 0;                                               % Default to no plotting
-    dParams.nneg_dict   = 0;                                               % Default to not having negativity constraints
-    dParams.nonneg      = false;                                           % Default to not having negativity constraints on the coefficients
+    dParams.nneg_dict   = 1;                                               % Default to not having negativity constraints
+    dParams.nonneg      = true;                                           % Default to not having negativity constraints on the coefficients
     dParams.plot        = false;                                           % Default to not plot spatial components during the learning
     dParams.updateEmbed = false;                                           % Default to not updateing the graph embedding based on changes to the coefficients
     dParams.mask        = [];                                              % for masked images (widefield data)
