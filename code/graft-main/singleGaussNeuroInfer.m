@@ -66,7 +66,7 @@ else
         end
     else
        opts.nonneg = false;
-       S = solver_L1RLS(A, mov_vec, lambda_val, zeros(N2, 1), opts );         % Solve the weighted LASSO using TFOCS and a modified linear operator
+       S = solver_L1RLS(D, mov_vec, lambda_val, zeros(N2, 1), opts );         % Solve the weighted LASSO using TFOCS and a modified linear operator
        S = S./tau_vec;                                                        % Re-normalize to get weighted LASSO values
    end
 end
