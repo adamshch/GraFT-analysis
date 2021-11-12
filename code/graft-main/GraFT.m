@@ -53,11 +53,6 @@ end
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% Run dictionary learning - Main loop
 
-if params.randProj
-    [projmat,~] = qr(randn(T));
-    params.projmat = projmat(:,1:100);
-end
-
 while (n_iter <= params.max_learn)&&(dDict > params.learn_eps)             % While the ending conditions are not yet met...
     
     if n_iter == 1                                                         % On the first iteration, initialize the...
@@ -67,11 +62,7 @@ while (n_iter <= params.max_learn)&&(dDict > params.learn_eps)             % Whi
     
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     %% First step is to compute the presence coefficients from the dictionary:
-    if isfield(params,'likely_form')&&strcmp(params.likely_form,'homotopy')
-        [S, W] = IRWH(data_obj, dict_out, corr_kern, params, W);
-    else
-        [S, W] = dictionaryRWL1SF(data_obj,dict_out,corr_kern,params,S);   % Infer coefficients given the data and dictionary
-    end
+    [S, W] = dictionaryRWL1SF(data_obj,dict_out,corr_kern,params,S);   % Infer coefficients given the data and dictionary
  
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     %% Temporary plotting code to show intermediary values:
@@ -115,11 +106,7 @@ end
 %% Some post-processing
 % Re-compute the presence coefficients from the dictionary:
 if ~params.normalizeSpatial
-    if isfield(params,'likely_form')&&strcmp(params.likely_form,'homotopy')
-        [S, W] = IRWH(data_obj, dict_out, corr_kern, params, W);
-    else
-        [S, W] = dictionaryRWL1SF(data_obj,dict_out,corr_kern,params,S);   % Infer coefficients given the data and dictionary
-    end
+    [S, W] = dictionaryRWL1SF(data_obj,dict_out,corr_kern,params,S);   % Infer coefficients given the data and dictionary
 end
 Dnorms   = sqrt(sum(dict_out.^2,1));                                       % Get norms of each dictionary element
 Smax     = max(S,[],1);                                                    % Get maximum value of each spatial map
@@ -203,7 +190,6 @@ function params = checkAllParameters(params)
     dParams.updateEmbed = false;                                           % Default to not updateing the graph embedding based on changes to the coefficients
     dParams.mask        = [];                                              % for masked images (widefield data)
     dParams.normalizeSpatial = false;                                      % default behavior - time-traces are unit norm. when true, spatial maps normalized to max one and time-traces are not normalized
-    dParams.randProj    = false;
     
     params = setParams(dParams, params);
     
