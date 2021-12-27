@@ -52,6 +52,7 @@ if strcmp(lower(solverOpt),'lasso')                                        % Sol
             max_val                  = max(S_out);                         % Compute the max coefficient value
             S_out(S_out<0.1*max_val) = 0;                                  % Threshold the output since LASSO often returns silly small values
             S(ll,:)                  = S_out;                              % Save the coefficients for this pixel. 
+            fprintf('.')
         end
 	fprintf('done.\n')
     else

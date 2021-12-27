@@ -2,7 +2,7 @@ function mov = denoiseCIinTime(mov, varargin)
 
 % denoiseTracesWavelet(fuObj, varargin)
 % 
-% Function to denoise functional ultrasoud data in time using wavelet
+% Function to denoise calcium imaging data in time using wavelet
 % denoising. To avoid the missing data problem, error frames from burst
 % errors are filled in using cubic spline interpolation.
 % 
@@ -12,7 +12,7 @@ function mov = denoiseCIinTime(mov, varargin)
 %% Input parsing
 
 p = inputParser;                                                           % Set up an object to parse all of the various inputs
-p.addParameter('smoothLvl'       , 2         );                            % Select at what wavelet level to smooth at
+p.addParameter('smoothLvl'       , 4         );                            % Select at what wavelet level to smooth at
 p.addParameter('DenoisingMethod' , 'BlockJS' );                            % For the situation that 'prctile' is chosen, which percentile should the baseline image be calculated using
 p.addParameter('wDenoiseFun'     , 'wdenoise');                            % Select which pixels to select: either an array or 'vary' or 'rand'
 p.addParameter('Wavelet'         , 'sym4'    );                            % Select hoe many traces to select
@@ -34,10 +34,21 @@ if p.smoothLvl == 0                                                        % No 
 elseif p.smoothLvl > 0
     switch p.wDenoiseFun 
         case 'wdenoise'                                                    % Choise to use 'wdenoise' for denoising
+            fprintf('starting denoising\n')
             mov = wdenoise(...
                     double(reshape(mov,matSize)'),...
                                     p.smoothLvl,'DenoisingMethod',...
                                     p.DenoisingMethod,'Wavelet',p.Wavelet);% Run the wavelet denoising
+            fprintf('reshaping\n')
+            mov = single(reshape(mov', movSize));                          % Reshape to a movie
+        case 'wdenoiseRAM'                                                    % Choise to use 'wdenoise' for denoising
+            fprintf('starting denoising\n')
+            mov = reshape(mov,matSize)';
+            parfor ll = 1:(movSize(1)*movSize(2))
+                mov(:,ll) = wdenoise(double(mov(:,ll)), p.smoothLvl,'DenoisingMethod',...
+                                    p.DenoisingMethod,'Wavelet',p.Wavelet);% Run the wavelet denoising
+            end
+            fprintf('reshaping\n')
             mov = single(reshape(mov', movSize));                          % Reshape to a movie
         case 'cmddenoise'                                                  % Choise to use 'wdenoise' for denoising
             for ll = 1:(movSize(1)*movSize(2))
