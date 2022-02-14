@@ -129,7 +129,7 @@ if pars.normalize                                                          % Che
                 Fnorm = 1;
         end
         Fnorm(Fnorm==0) = 1;
-        X = X/Fnorm;                                                       % Normalize the data on a global basis
+        X = X./Fnorm;                                                       % Normalize the data on a global basis
     end
     fprintf('done.\n')
 else

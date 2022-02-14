@@ -110,9 +110,9 @@ end
 [Dm, Sm] = reorderDictionary(Y, Dm, Sm);                                   % Reorders te dictionary elements based on magnitude
 
 if nargout > 3
-    RESULTS2.S   = S;
-    RESULTS2.D   = D;
-    varargout{1} = RESULTS2;
+    RESULTS2.S   = S;                                                      % Output the spatial maps
+    RESULTS2.D   = D;                                                      % Output the time-traces
+    varargout{1} = RESULTS2;                                               % Place the output struct as the output
     clear RESULTS2
 end
 
@@ -243,14 +243,13 @@ fprintf('Running full GraFT to merge components...\n')
 
 tic
 if mergeOpt == 1
-    Dm = D;
-    Sm = S;
-
-    for i = 1:params.mergeIters
-        fprintf('Starting iteration %d...\n',i);tic;
-        params.verbose = 10;
+    Dm = D;                                                                % Create a dummy variable for the time traces
+    Sm = S;                                                                % Create a dummy variable for the spatiual maps
+    for i = 1:params.mergeIters                                            % Loop over merge iterations
+        fprintf('Starting iteration %d...\n',i);tic;                       
+        params.verbose = 10;                                               % Set verbosity level
         gcp
-        [Sm, W] = dictionaryRWL1SF(Yr,Dm,full_corr_kern,params,Sm);   % Infer coefficients given the data and dictionary
+        [Sm, W] = dictionaryRWL1SF(Yr,Dm,full_corr_kern,params,Sm);        % Infer coefficients given the data and dictionary
         fprintf('...Updated coefficients in %f seconds.\n', toc); tic
         Dm = dictionary_update(Yr.',Dm, Sm.',params.step_s,params);  % Take a gradient step with respect to the dictionary
         fprintf('...Updated dictionary in %f seconds.\n', toc);
@@ -264,8 +263,8 @@ if mergeOpt == 1
     end
 else
     options.merge_thr =0.85;
-    [Dm,Sm] = mergeGraFTdictionaries(D,S,options,params.normalizeSpatial);
-    Sm      = reCalcCoefSparse(Yr, Dm, Sm, params.lambda, true, 'lasso');      % Recalculate the coefficients with the LASSO
+    [Dm,Sm] = mergeGraFTdictionaries(D,S,options,params.normalizeSpatial); % Merge the dictionaries
+    Sm      = reCalcCoefSparse(Yr, Dm, Sm, params.lambda, true, 'lasso');  % Recalculate the coefficients with the LASSO
 end
 
 

@@ -116,7 +116,7 @@ end
 % Re-compute the presence coefficients from the dictionary:
 if ~params.normalizeSpatial
     if isfield(params,'likely_form')&&strcmp(params.likely_form,'homotopy')
-        [S, W] = IRWH(data_obj, dict_out, corr_kern, params, W);
+        [S, W] = IRWH(data_obj, dict_out, corr_kern, params, W);           % EXPERIMENTAL iterative reweighted code
     else
         [S, W] = dictionaryRWL1SF(data_obj,dict_out,corr_kern,params,S);   % Infer coefficients given the data and dictionary
     end
@@ -175,7 +175,6 @@ end
 %% Check all parameters and set the remainder to defaults
 
 function params = checkAllParameters(params)
-
     dParams.tau         = 1;                                               % Default tau values to be spatially varying
     dParams.lambda      = 0.6;                                             % Default lambda parameter is 0.6
     dParams.lamForb     = 0;                                               % Default Forbenius norm parameter is 0 (don't use)
