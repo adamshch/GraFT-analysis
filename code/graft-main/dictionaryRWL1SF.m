@@ -43,38 +43,10 @@ switch likely_form
 end
 
 %mov = single(reshape(mov, im_x*im_y, nt));                                 % Reshape the movie to columns for easier processing (each pixel over time is a column)
-%%%%%%%%%%%%%%%%%%%%
-if params.randProj
-    %projmat = rand(min(nt,100),nt);
-    %projmat = bsxfun(@rdivide,projmat,sum(projmat,2));
-    %projmat = projmat / norm(projmat,'fro');
-    
-    %[projmat,~] = qr(randn(nt));
-    %projmat = projmat(:,1:100);
-    %projmat = projmat / norm(projmat,'fro');
-    
-    %lambda = lambda * norm(projmat,'fro');
-    D = params.projmat' * D;
-    mov = mov * params.projmat;
-    
-end
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% Run loop
-if params.randProj
-    %projmat = rand(min(nt,100),nt);
-    %projmat = bsxfun(@rdivide,projmat,sum(projmat,2));
-    %projmat = projmat / norm(projmat,'fro');
-    
-    [projmat,~] = qr(randn(nt));
-    projmat = projmat(:,1:100);
-    %projmat = projmat / norm(projmat,'fro');
-    
-    %lambda = lambda * norm(projmat,'fro');
-    D = projmat' * D;
-    mov = mov * projmat;
-    
-end
-    
+  
 for kk = 1:params.numreps
     % Step 1: Update spike weights: S =  tau/(beta + |S| + |W*S|)
     S = double(S);
@@ -105,8 +77,6 @@ if params.normalizeSpatial
     for i = 1:nd
         if max(S(:,i)) ~= 0
             S(:,i) = S(:,i) / (max(S(:,i)) + eps);
-            %     else
-            %         S(:,i) = 1e-6*ones(size(S(:,i)));
         end
     end
     S(S(:)<2^(-5))=0;
@@ -202,7 +172,7 @@ function [params, lambda, beta, maxiter, tolerance, nonneg, verbose, ...
        dParams.maxiter       = 0.01;                                       % Default the maximum iteration 
        dParams.numreps       = 2;
        dParams.tolerance     = 1e-8;
-       dParams.nonneg        = false;
+       dParams.nonneg        = true;
        dParams.verbose       = 10;
        dParams.updateEmbed   = false;
        dParams.likely_form   = 'gaussian';

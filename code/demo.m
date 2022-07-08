@@ -22,24 +22,30 @@
 % This first block sets up the basic parameters 
 
 saveDir  = '.';                                                            % Set the path where the output should be saved to
-usePatch = false;                                                           % Select if patchGraFT or regular GraFT should be used. For bigger field-of-views (>150 pix X 150 pix), patchGraFT is recommended
+usePatch = true;                                                           % Select if patchGraFT or regular GraFT should be used. For bigger field-of-views (>150 pix X 150 pix), patchGraFT is recommended
 
-params.lambda    = 1.5;                                                   % Sparsity parameter
-params.lamForb   = 1.2;                                                    % parameter to control how much to weigh extra time-traces
+params.lambda    = 0.7;                                                   % Sparsity parameter
+params.lamForb   = 0.2;                                                    % parameter to control how much to weigh extra time-traces
 params.lamCorr   = 0.1;                                                    % Parameter to prevent overly correlated dictionary elements 
-params.n_dict    = 20;                                                     % Choose how many components (per patch) will be initialized. Note: the final number of coefficients may be less than this due to lack of data variance and merging of components.
+params.n_dict    = 15;                                                     % Choose how many components (per patch) will be initialized. Note: the final number of coefficients may be less than this due to lack of data variance and merging of components.
 params.patchSize = 50;                                                     % Choose the size of the patches to break up the image into (squares with patchSize pixels on each side)
 
 Xsel = 151:350;                                                            % Can sub-select a portion of the full FOV to test on a small section before running on the full dataset
-Ysel = 201:400;                                                            % ...
-motion_correct = false;
+Ysel = 101:300;                                                            % ...
+params.motion_correct = false;
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% Set up paths & misc startups
 
 addpath(genpath('.'))                                                      % Add all the files in the repo
-if isempty(gcp('nocreate')); parpool(16,'IdleTimeout',5000); end           % If no parpool, make one
+ncores       = feature('numcores');                                        % Sets number of cores
+core_percent = 1;                                                          % Sets the percent of cores to use
+if isempty(gcp('nocreate')); 
+    parpool(ceil(core_percent*ncores),'IdleTimeout',5000);                 % If no parpool, make one
+end          
+warning(sprintf('Using %d cores for parpool. Change var core_percent above if necessary',ceil(core_percent*ncores)));
 RandStream.setGlobalStream(RandStream('mt19937ar'));                       % Set the random stream
+
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% Download and load NeuroFinder data
@@ -74,12 +80,17 @@ fprintf('...done\n')
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% Motion correction: may be required if not already run
 
-if motion_correct % use normcorre
-  %%
-  options_rigid = NoRMCorreSetParms('d1',size(data.Fsim,1),'d2',size(data.Fsim,2), ...
-    'bin_width',50,'max_shift',10,'us_fac',2,'iter',5,'init_batch',200);
-  [data.Fsim,shifts,template,options,col_shift] = normcorre(data.Fsim,options_rigid);
-  %%
+if params.motion_correct  % use normcorre
+    try
+        %%
+        options_rigid = NoRMCorreSetParms('d1',size(data.Fsim,1),'d2',size(data.Fsim,2), ...
+            'bin_width',50,'max_shift',10,'us_fac',2,'iter',5,'init_batch',200);
+        [data.Fsim,shifts,template,options,col_shift] = normcorre(data.Fsim,options_rigid);
+        %%
+    catch me
+        error('motion correction: normcorre not found. Download from https://github.com/flatironinstitute/NoRMCorre and add to path')
+
+    end
 end
 data.Fsim = data.Fsim/median(data.Fsim(:));
 
@@ -143,12 +154,12 @@ if params.normalizeSpatial
 else
     normType = 'temporal';
 end
-saveName = sprintf('nfRun_%d_%d_%d_%d_%d_%s.mat', ...
-                   round(100*params.lambda), round(100*params.lamForb),...
-                    round(100*params.lamCorr), round(100*params.lamCont),...
-                    K, normType); % Set the save name to store results in
+saveName = sprintf('nfRun_%d_%d_%d_%d_%s.mat', ...
+                round(100*params.lambda), round(100*params.lamForb),...
+                round(100*params.lamCorr), round(100*params.lamCont),...
+                                                                normType); % Set the save name to store results in
 fprintf('Saving results to %s...\n', saveName)
-save([saveDir,saveName],'S','D','params','-v7.3')  % Save the results
+save(fullfile(saveDir,saveName),'S','D','params','-v7.3')                  % Save the results
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% Plot the results
