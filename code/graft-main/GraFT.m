@@ -162,7 +162,6 @@ end
 %% Check all parameters and set the remainder to defaults
 
 function params = checkAllParameters(params)
-
     dParams.tau         = 1;                                               % Default tau values to be spatially varying
     dParams.lambda      = 0.6;                                             % Default lambda parameter is 0.6
     dParams.lamForb     = 0;                                               % Default Forbenius norm parameter is 0 (don't use)

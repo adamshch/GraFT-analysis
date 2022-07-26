@@ -22,16 +22,16 @@
 % This first block sets up the basic parameters 
 
 saveDir  = '.';                                                            % Set the path where the output should be saved to
-usePatch = false;                                                           % Select if patchGraFT or regular GraFT should be used. For bigger field-of-views (>150 pix X 150 pix), patchGraFT is recommended
+usePatch = true;                                                           % Select if patchGraFT or regular GraFT should be used. For bigger field-of-views (>150 pix X 150 pix), patchGraFT is recommended
 
-params.lambda    = 0.05;                                                   % Sparsity parameter
+params.lambda    = 0.7;                                                   % Sparsity parameter
 params.lamForb   = 0.2;                                                    % parameter to control how much to weigh extra time-traces
 params.lamCorr   = 0.1;                                                    % Parameter to prevent overly correlated dictionary elements 
-params.n_dict    = 20;                                                     % Choose how many components (per patch) will be initialized. Note: the final number of coefficients may be less than this due to lack of data variance and merging of components.
+params.n_dict    = 15;                                                     % Choose how many components (per patch) will be initialized. Note: the final number of coefficients may be less than this due to lack of data variance and merging of components.
 params.patchSize = 50;                                                     % Choose the size of the patches to break up the image into (squares with patchSize pixels on each side)
 
 Xsel = 151:350;                                                            % Can sub-select a portion of the full FOV to test on a small section before running on the full dataset
-Ysel = 201:400;                                                            % ...
+Ysel = 101:300;                                                            % ...
 params.motion_correct = false;
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -119,10 +119,11 @@ fprintf('Setting up parameters...')
 params.lamCont       = 0.1;                                                % parameter to control how much to weigh the previous estimate (continuity term)
 params.grad_type     = 'full_ls_cor';                                      % type of dictionary update
 params.lamContStp    = 0.9;                                                % Decay rate of the continuation parameter
-params.plot          = true;                                               % Set whether to plot intermediary variables
+params.plot          = true;                                              % Set whether to plot intermediary variables
 params.create_memmap = false;                                              % 
-params.verbose       = 0;                                                  % Level of verbose output 
+params.verbose       = 10;                                                  % Level of verbose output 
 params.normalizeSpatial = true;
+params.nonneg           = true;
 
 corr_kern.w_time     = 0;                                                  % Initialize the correlation kernel struct
 corr_kern.reduce_dim = true;
@@ -133,7 +134,9 @@ fprintf('done.\n')
 %% Actually run GraFT
 % This is how to run the main function. The commented line is how to call
 % GraFT if you don't want to run the above lines independently
- 
+
+% corr_kern = checkCorrKern(data_obj, corr_kern, params.verbose);  
+
 fprintf('Running with parameters lambda = %f, lamforb = %f, lamcont = %f, lamCorr = %f.\n', ...
            params.lambda, params.lamForb, params.lamCont, params.lamCorr);
 if usePatch
@@ -152,11 +155,11 @@ else
     normType = 'temporal';
 end
 saveName = sprintf('nfRun_%d_%d_%d_%d_%s.mat', ...
-                   round(100*params.lambda), round(100*params.lamForb),...
-                    round(100*params.lamCorr), round(100*params.lamCont),...
-                    normType); % Set the save name to store results in
+                round(100*params.lambda), round(100*params.lamForb),...
+                round(100*params.lamCorr), round(100*params.lamCont),...
+                                                                normType); % Set the save name to store results in
 fprintf('Saving results to %s...\n', saveName)
-save(fullfile(saveDir,saveName),'S','D','params','-v7.3')  % Save the results
+save(fullfile(saveDir,saveName),'S','D','params','-v7.3')                  % Save the results
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% Plot the results
@@ -168,5 +171,14 @@ end
 MovieSlider(Sthresh);
 
 clear ll 
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%
+
+for kk = 1:min(25,size(S,3))
+    subplot(5,5,kk), imagesc(S)
+    axis image; axis off; colormap gray;
+end
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
