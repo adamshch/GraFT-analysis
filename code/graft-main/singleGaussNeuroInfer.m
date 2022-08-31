@@ -1,10 +1,11 @@
-function S = singleGaussNeuroInfer(tau_vec, mov_vec, D, lambda_val, TOL, nonneg, S)
+function [S, iA] = singleGaussNeuroInfer(tau_vec, mov_vec, D, lambda_val, TOL, nonneg, S)
 
 % S = singleGaussNeuroInfer(tau_vec, mov_vec, D, lambda_val, TOL)
 % 
-% Use quadprog  to solve the weighted LASSO problem for a single vector
+% Use MPC to solve the weighted LASSO problem for a single vector
 % 
 % 2018 - Adam Charles
+% 2022 - Alex Estrada - MPC Update
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% Input parsing
@@ -48,28 +49,46 @@ N2      = numel(tau_vec);                                                  % Get
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% Run the weighted LASSO to get the coefficients
+mpc_opts = mpcActiveSetOptions;                                            % Optimization options
+h_quad = double(2*(D.'*D));                                                % Quadratic objective term for lasso.
+n = length(double(-2*D.'*mov_vec+lambda_val.*tau_vec));
 
-qp_opts.Display = 'off';
 
 if norm(mov_vec) == 0
     S = zeros(N2, 1);                                                        % This is the trivial solution to generate all zeros linearly.
 else
     if nonneg
-        if all(S==0)
-            S = quadprog(double(2*(D.'*D)), ...
-                double(-2*D.'*mov_vec+lambda_val.*tau_vec), [], ...
-                [], [], [], zeros(N2,1), Inf*ones(N2,1), [], qp_opts);        % Use quadratic programming to solve the non-negative LASSO
+        if all(S==0)             
+            % cold start
+            [S, ~, iA, ~] = mpcActiveSetSolver(h_quad,...                  % Hessian matrix
+                     double(-2*D.'*mov_vec+lambda_val.*tau_vec),...        % Multiplier of the objective linear function
+                     zeros(0,n),...                                        % Linear inequality constraint coefs
+                     zeros(0,1),...                                        % Right-hand side of inequality constraints
+                     zeros(0,n),...                                        % Linear eq constraint coefs
+                     zeros(0,1),...                                        % Right-hand side of eq. constraints
+                     false(size(zeros(0,1))),...                           % Initial active inequalities
+                     mpc_opts);                                                % Using MPC to solve the non-negative weighted LASSO
+
         else
-            S = quadprog(double(2*(D.'*D)), ...
-                double(-2*D.'*mov_vec+lambda_val.*tau_vec), [], ...
-                [], [], [], zeros(N2,1), Inf*ones(N2,1), S, qp_opts);         % Use quadratic programming to solve the non-negative LASSO
+            if ~exist('iA', 'var'); iA = false(0,1); end                   % Warm Start [for no inequality constraints 'false(0,1)']
+
+            [S, ~, iA, ~] = mpcActiveSetSolver(h_quad,...
+                     double(-2*D.'*mov_vec+lambda_val.*tau_vec),...
+                     zeros(0,n),...
+                     zeros(0,1),...
+                     zeros(0,n),...
+                     zeros(0,1),...
+                     iA,...                                                
+                     mpc_opts);                                            % Using MPC to solve the non-negative weighted LASSO
         end
+
     else
        opts.nonneg = false;
        S = solver_L1RLS(D, mov_vec, lambda_val, zeros(N2, 1), opts );         % Solve the weighted LASSO using TFOCS and a modified linear operator
        S = S./tau_vec;                                                        % Re-normalize to get weighted LASSO values
    end
 end
+
 
 S(S(:)<0.1*max(S(:))) = 0;
 

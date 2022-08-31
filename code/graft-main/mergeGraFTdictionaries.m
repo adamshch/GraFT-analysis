@@ -5,6 +5,7 @@ function [D,S] = mergeGraFTdictionaries(D,S,options,normalizeSpatial)
 %
 %
 % 2020 - Gal Mishne & Adam Charles
+% 2022 - Alex Estrada - getSpatialWeights Update
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% Initialization and input parsing
@@ -172,7 +173,6 @@ MASK(MASK(:)==0) = 1;
 
 end
 
-
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%
 
@@ -211,7 +211,7 @@ function [aa, cc] = calculateMergedROIs(C, A, MASK, nC, merged_ROIs, i, normaliz
 A_subset = A(:,merged_ROIs{i});
 C_subset = C(merged_ROIs{i},:);
 
-aRatio  = getSpatialWeights(A_subset, C_subset);
+aRatio  = getSpatialWeights(A_subset, C_subset);                           
 [aa,nA] = mergeSingleSpatial(A_subset,aRatio,MASK);
 cc      = mergeSingleTempotal(C_subset,nA);
 
@@ -291,12 +291,12 @@ for ll = 1:size(combs,1)
         aRatio(combs(ll,1),combs(ll,2)) = NaN;                             % ... save NaNs as the ratio (0/0)
         aRatio(combs(ll,2),combs(ll,1)) = NaN;                             % ... 1/(0/0) is also a NaN
     else                                                                   % If there IS OVERLAP...
-        aRatio(combs(ll,1),combs(ll,2)) = nanmedian(...
+        aRatio(combs(ll,2),combs(ll,1)) = nanmedian(...                   
             (D(combs(ll,1),:) - median(D(combs(ll,1),:)))./ ...
             (D(combs(ll,2),:) - median(D(combs(ll,2),:))));                % ... aRatio is the median ratio between significant pixels
-        aRatio(combs(ll,2),combs(ll,1)) = nanmedian(...
+        aRatio(combs(ll,1),combs(ll,2)) = nanmedian(...
             (D(combs(ll,2),:) - median(D(combs(ll,2),:)))./ ...
-            (D(combs(ll,1),:) - median(D(combs(ll,1),:))));                % ... aRatio is the median ratio between significant pixels% ... This matrix is NOT symmetric as Aij = 1/Aji
+            (D(combs(ll,1),:) - median(D(combs(ll,1),:))));  
     end
 end
 
