@@ -62,7 +62,7 @@ while (n_iter <= params.max_learn)&&(dDict > params.learn_eps)             % Whi
     
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     %% First step is to compute the presence coefficients from the dictionary:
-    [S, W] = dictionaryRWL1SF(data_obj,dict_out,corr_kern,params,S);   % Infer coefficients given the data and dictionary
+    [S, W] = dictionaryRWL1SF(data_obj,dict_out,corr_kern,params,S);       % Infer coefficients given the data and dictionary
  
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     %% Temporary plotting code to show intermediary values:
@@ -106,7 +106,7 @@ end
 %% Some post-processing
 % Re-compute the presence coefficients from the dictionary:
 if ~params.normalizeSpatial
-    [S, W] = dictionaryRWL1SF(data_obj,dict_out,corr_kern,params,S);   % Infer coefficients given the data and dictionary
+    [S, W] = dictionaryRWL1SF(data_obj,dict_out,corr_kern,params,S);       % Infer coefficients given the data and dictionary
 end
 Dnorms   = sqrt(sum(dict_out.^2,1));                                       % Get norms of each dictionary element
 Smax     = max(S,[],1);                                                    % Get maximum value of each spatial map
