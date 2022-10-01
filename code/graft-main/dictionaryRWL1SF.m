@@ -53,7 +53,7 @@ end
 %mov = single(reshape(mov, im_x*im_y, nt));                                 % Reshape the movie to columns for easier processing (each pixel over time is a column)
 
 DTD = D.'*D; % Precompute the Hessian
-D2  = Phi*D;
+% D2  = Phi*D;
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% Run loop
@@ -76,7 +76,7 @@ for kk = 1:params.numreps
                                           D, maxiter, tolerance, verbose); % Perform column-wise Poisson de-mixing - currently calls SPIRAL-TAP
             case 'gaussian'                                                % Gaussian noise --> use a weighted LASSO
                 S(ll,:) = singleGaussNeuroInfer(tau_mat(ll,:), ...
-                                 Phi*(mov(ll,:).'), {D2,DTD}, lambda, ...
+                                 (mov(ll,:).'), {D,DTD}, lambda, ...
                                           1e-4, nonneg, S(ll,:),solveUse); % Perform column-wise Gaussian de-mixing - calls a LASSO solver that can be non-negative
             otherwise
                 error('Unknown likelihood form')
