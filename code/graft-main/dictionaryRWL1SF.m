@@ -20,7 +20,7 @@ end
 if nargin > 6; solveUse = varargin{2};
 else;          solveUse = 'quadprog';
 end
-
+solveUse
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% Set Initializations
 if size(mov,3)>1
