@@ -21,6 +21,13 @@ else                                                                       % Oth
 end
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% Determine access to the MPC toolbox
+
+if license('test','MPC_Toolbox');    solveUse = 'mpc';
+else;                                solveUse = 'quadprog';
+end
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% Check spatial smoothing kernel
 
 verbPrint(params.verbose, 2, 'Checking the spatial/embedding kernel...')   % Optional verbose output (level 2)
@@ -33,7 +40,7 @@ verbPrint(params.verbose, 2, 'Correlation kernel OK.')                     % Opt
 verbPrint(params.verbose, 2, 'Initializing dictionary learning algorithm.')% Optional verbose output (level 2)
 
 if nargout > 2
-    extras         = struct;
+    extras         = struct;                                               % Initialize the extras struct
     extras.dictEvo = [];                                                   % Initialize storage of dicationay evolution
     extras.presMap = [];                                                   % Initialize storage of presence maps
     extras.wghtMap = [];                                                   % Initialize storage of weight maps
@@ -46,26 +53,29 @@ dDict    = Inf;                                                            % Ini
 
 verbPrint(params.verbose, 2, 'Finished initialization.')                   % Optional verbose output (level 2)
 
-if params.plot                                                             % In the case that intermediary results are plotted... 
-    h1 = figure(100);                                                      % Initialize the figure
-end
+if params.plot; h1 = figure(100); end                                      % In the case that intermediary results are plotted initialize the figure 
+
+S = [];                                                                    % Initialize the coefficient array
+
+% Phi = randn(10*size(dict_out,2),size(dict_out,1));
+% Phi = diag(1./sqrt(sum(abs(Phi.^2),2)))*Phi;
+Phi = 1;
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% Run dictionary learning - Main loop
 
 while (n_iter <= params.max_learn)&&(dDict > params.learn_eps)             % While the ending conditions are not yet met...
     
-    if n_iter == 1                                                         % On the first iteration, initialize the...
-        S = [];                                                            %   ... coefficient array
-        W = [];                                                            %   ... weight array
-    end
-    
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     %% First step is to compute the presence coefficients from the dictionary:
-    [S, W] = dictionaryRWL1SF(data_obj,dict_out,corr_kern,params,S);   % Infer coefficients given the data and dictionary
- 
+    
+    tic;
+    [S, W] = dictionaryRWL1SF(data_obj,dict_out,corr_kern,params,S,Phi,solveUse);   % Infer coefficients given the data and dictionary
+    T1 = toc;
+    
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     %% Temporary plotting code to show intermediary values:
+    
     if params.plot 
         figure(h1); clf
         subplot(2,2,1), cla; imagesc(basis2img2(S,...
@@ -86,15 +96,27 @@ while (n_iter <= params.max_learn)&&(dDict > params.learn_eps)             % Whi
     
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     %% Second step is to update the dictionary:
+    
     dict_old = dict_out;                                                   % Save the old dictionary for metric calculations
+    tic;
     dict_out = dictionary_update(data_obj.',dict_out, S.',step_s,params);  % Take a gradient step with respect to the dictionary
+    T2 = toc;
+    
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    %% Some prelude stuff and outputs for verification
     
     step_s   = step_s*params.step_decay;                                   % Update the step size
     dDict    = norm(vec(dict_out - dict_old))./norm(vec(dict_old));        % Calculate the difference in dictionary coefficients
+    
     verbPrint(params.verbose, 1, ...
-           sprintf('Iteration %d: delta dictionary is %f.', n_iter, dDict))% Some outputs
+           sprintf('Iteration %d: delta dictionary is %f. (Tsp = %f, Tdu = %f)', ...
+           n_iter, dDict, T1, T2))% Some outputs
+    verbPrint(params.verbose, 1, sprintf('      -- max S = %f. mean D = %f',...
+                                      max(max(max(S))), mean(dict_out(:))))% Some outputs   
+    
     params.lamCont = params.lamContStp*params.lamCont;                     % Continuation parameter decay
-    n_iter   = n_iter + 1;                                                 % Count the iterations
+    n_iter         = n_iter + 1;                                           % Count the iterations
+    
     if nargout > 2
         extras.dictEvo = cat(3,extras.dictEvo,dict_old);                   % Save current dictionary
         extras.presMap = cat(4,extras.presMap, S);                         % Save current presence maps
@@ -106,7 +128,7 @@ end
 %% Some post-processing
 % Re-compute the presence coefficients from the dictionary:
 if ~params.normalizeSpatial
-    [S, W] = dictionaryRWL1SF(data_obj,dict_out,corr_kern,params,S);   % Infer coefficients given the data and dictionary
+    [S, ~] = dictionaryRWL1SF(data_obj,dict_out,corr_kern,params,S);       % Infer coefficients given the data and dictionary
 end
 Dnorms   = sqrt(sum(dict_out.^2,1));                                       % Get norms of each dictionary element
 Smax     = max(S,[],1);                                                    % Get maximum value of each spatial map

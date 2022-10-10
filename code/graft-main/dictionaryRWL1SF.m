@@ -1,4 +1,4 @@
-function [S, tau_mat] = dictionaryRWL1SF(mov, D, corr_kern, params, S)
+function [S, tau_mat] = dictionaryRWL1SF(mov, D, corr_kern, params, S, varargin)
 
 % [S,tau_mat] = dictionaryRWL1SF(mov, D, corr_kern, params, S)
 % 
@@ -13,13 +13,21 @@ function [S, tau_mat] = dictionaryRWL1SF(mov, D, corr_kern, params, S)
 [params, lambda, beta, maxiter, tolerance, nonneg, verbose, ...
                                 likely_form] = paramCheckAll(params, mov); % Parse the params struct to extract all the needed parameters
 
+if nargin > 5; Phi = varargin{1};
+else;          Phi = 1;
+end
+
+if nargin > 6; solveUse = varargin{2};
+else;          solveUse = 'quadprog';
+end
+solveUse
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% Set Initializations
 if size(mov,3)>1
     [params.nRows,params.nCols,~] = size(mov);                             % 
     mov = reshape(mov,[],size(mov,3));                                     % Reshape the movie to an appropriate size
 end
-[n_pts,nt,nd] = getDataSizes(mov,D);                                       % Get movie height, width, time-length and dictionary size
+[n_pts,~,nd] = getDataSizes(mov,D);                                        % Get movie height, width, time-length and dictionary size
 corr_kern     = checkCorrKern(mov, corr_kern, verbose);                    % Check spatial smoothing kernel
 
 if nargin < 5 || isempty(S)
@@ -44,9 +52,12 @@ end
 
 %mov = single(reshape(mov, im_x*im_y, nt));                                 % Reshape the movie to columns for easier processing (each pixel over time is a column)
 
+DTD = D.'*D; % Precompute the Hessian
+% D2  = Phi*D;
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% Run loop
-  
+
 for kk = 1:params.numreps
     % Step 1: Update spike weights: S =  tau/(beta + |S| + |W*S|)
     S = double(S);
@@ -65,7 +76,8 @@ for kk = 1:params.numreps
                                           D, maxiter, tolerance, verbose); % Perform column-wise Poisson de-mixing - currently calls SPIRAL-TAP
             case 'gaussian'                                                % Gaussian noise --> use a weighted LASSO
                 S(ll,:) = singleGaussNeuroInfer(tau_mat(ll,:), ...
-                                      mov(ll,:), D, lambda, 1e-4, nonneg, S(ll,:)); % Perform column-wise Gaussian de-mixing - calls a LASSO solver that can be non-negative
+                                 (mov(ll,:).'), {D,DTD}, lambda, ...
+                                          1e-4, nonneg, S(ll,:),solveUse); % Perform column-wise Gaussian de-mixing - calls a LASSO solver that can be non-negative
             otherwise
                 error('Unknown likelihood form')
         end

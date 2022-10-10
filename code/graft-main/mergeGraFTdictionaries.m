@@ -5,6 +5,7 @@ function [D,S] = mergeGraFTdictionaries(D,S,options,normalizeSpatial)
 %
 %
 % 2020 - Gal Mishne & Adam Charles
+% 2022 - Alex Estrada - getSpatialWeights Update
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% Initialization and input parsing
@@ -22,11 +23,17 @@ end
 %% 
 
 if nargin < 5
+    tic
     [S_corr, FF2]     = getSpatialOverlapGraph(S, nr);                     % Find graph of overlapping spatial components (positive inner products)
+    fprintf('Computed spatial overlaps in %f s.\n',toc);tic
     D_corr            = getTemporalCorrelations(D, S_corr, nr);            % Calculate the temporal correlations betwwen overlapping spatial componnets
+    fprintf('Computed temporal overlaps in %f s.\n',toc);tic
     MC                = getMergeIndices(D_corr, FF2, thr);                 % Find if any componentes are strongly connected and to who
+    fprintf('Computed merged indices in %f s.\n',toc);tic
     cor               = sumMergeComponentCorrelations(MC, D_corr);         % Add up all the correlations for the graph of indices to potentially merge
+    fprintf('Computed merged component correlations in %f s.\n',toc);tic
     [nm, merged_ROIs] = organizeIndicesToMerge(cor, MC, mx);               % Create an array where each element is a set of components to merge into a single component
+    fprintf('Computed indices to merge in %f s.\n',toc)
 else                                                                       % If merged_ROIs is provided, use those (allows for custom merging criteria)
     nm = length(merged_ROIs);                                              %  - In this case only the number of merges is needed
 end
@@ -35,18 +42,21 @@ S_merged = zeros(d,nm);                                                    % Ini
 D_merged = zeros(nm,T);                                                    % Initialize the merged temporal profiles
 
 for i = 1:nm
+    tic
     MASK = createMergingMask(S, merged_ROIs, i);                           % Create a mask over the spatial area of the profiles to merge
     nC   = calculatePatchNormalizations(D, merged_ROIs, i);                % 
 
     %%%% CHANGE FROM HERE DOWN %%%%
     [S_merged(:,i), D_merged(i,:)] = calculateMergedROIs(D, S, MASK, ...
                                     nC, merged_ROIs, i, normalizeSpatial); % Merge all ther ROIs
-                                
+    fprintf('Merged component %d in %f s.\n',i,toc)
 end
 
+tic
 [S, D, nr] = replaceMergedComponents(S, D, merged_ROIs, nr, nm, ...
                                                       S_merged, D_merged); % Replace the merged components with the new combination
 
+fprintf('Replaced merged componentsin %f s.\n',toc)
 D = D';                                                                    % Transpose the time-courses for back to how they were
 end
 
@@ -172,7 +182,6 @@ MASK(MASK(:)==0) = 1;
 
 end
 
-
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%
 
@@ -211,7 +220,7 @@ function [aa, cc] = calculateMergedROIs(C, A, MASK, nC, merged_ROIs, i, normaliz
 A_subset = A(:,merged_ROIs{i});
 C_subset = C(merged_ROIs{i},:);
 
-aRatio  = getSpatialWeights(A_subset, C_subset);
+aRatio  = getSpatialWeights(A_subset, C_subset);                           
 [aa,nA] = mergeSingleSpatial(A_subset,aRatio,MASK);
 cc      = mergeSingleTempotal(C_subset,nA);
 
@@ -291,12 +300,12 @@ for ll = 1:size(combs,1)
         aRatio(combs(ll,1),combs(ll,2)) = NaN;                             % ... save NaNs as the ratio (0/0)
         aRatio(combs(ll,2),combs(ll,1)) = NaN;                             % ... 1/(0/0) is also a NaN
     else                                                                   % If there IS OVERLAP...
-        aRatio(combs(ll,1),combs(ll,2)) = nanmedian(...
+        aRatio(combs(ll,2),combs(ll,1)) = nanmedian(...                   
             (D(combs(ll,1),:) - median(D(combs(ll,1),:)))./ ...
             (D(combs(ll,2),:) - median(D(combs(ll,2),:))));                % ... aRatio is the median ratio between significant pixels
-        aRatio(combs(ll,2),combs(ll,1)) = nanmedian(...
+        aRatio(combs(ll,1),combs(ll,2)) = nanmedian(...
             (D(combs(ll,2),:) - median(D(combs(ll,2),:)))./ ...
-            (D(combs(ll,1),:) - median(D(combs(ll,1),:))));                % ... aRatio is the median ratio between significant pixels% ... This matrix is NOT symmetric as Aij = 1/Aji
+            (D(combs(ll,1),:) - median(D(combs(ll,1),:))));  
     end
 end
 
