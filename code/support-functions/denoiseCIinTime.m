@@ -32,7 +32,7 @@ matSize = [movSize(1)*movSize(2),movSize(3)];                              % Get
 fprintf('Smoothing...')
 if p.smoothLvl == 0                                                        % No smoothing, nothing to do
 elseif p.smoothLvl > 0
-    switch p.wDenoiseFun 
+    switch lower(p.wDenoiseFun)
         case 'wdenoise'                                                    % Choise to use 'wdenoise' for denoising
             fprintf('starting denoising\n')
             mov = wdenoise(...
@@ -41,7 +41,7 @@ elseif p.smoothLvl > 0
                                     p.DenoisingMethod,'Wavelet',p.Wavelet);% Run the wavelet denoising
             fprintf('reshaping\n')
             mov = single(reshape(mov', movSize));                          % Reshape to a movie
-        case 'wdenoiseRAM'                                                    % Choise to use 'wdenoise' for denoising
+        case 'wdenoiseram'                                                 % Choise to use 'wdenoise' for denoising
             fprintf('starting denoising\n')
             mov = reshape(mov,matSize)';
             parfor ll = 1:(movSize(1)*movSize(2))

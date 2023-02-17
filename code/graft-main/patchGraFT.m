@@ -237,10 +237,13 @@ end
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% Wrapper for merge code to merge components
 
-function [Sm, Dm] = mergeWrapper(S, D, params, Yr, full_corr_kern, mergeOpt)
+function [Sm, Dm] = mergeWrapper(S, D, params, Yr, full_corr_kern, mergeOpt, varargin)
+
+if nargin > 6; recalcOpt = varargin{1};
+else;          recalcOpt = false;
+end
 
 fprintf('Running full GraFT to merge components...\n')
-
 tic
 if mergeOpt == 1
     Dm = D;                                                                % Create a dummy variable for the time traces
@@ -264,7 +267,9 @@ if mergeOpt == 1
 else
     options.merge_thr =0.85;
     [Dm,Sm] = mergeGraFTdictionaries(D,S,options,params.normalizeSpatial); % Merge the dictionaries
-    Sm      = reCalcCoefSparse(Yr, Dm, Sm, params.lambda, true, 'lasso');  % Recalculate the coefficients with the LASSO
+%     if recalcOpt
+%         Sm      = reCalcCoefSparse(Yr,Dm,Sm,params.lambda,true,'lasso');   % Recalculate the coefficients with the LASSO
+%     end
 end
 
 
