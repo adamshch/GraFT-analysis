@@ -28,6 +28,8 @@ function [Sm,Dm,RESULTS,varargout] = patchGraFT(data,K,patches,corr_kern, params
 % Adapted from: run_CNMF_patches
 % Author: Eftychios A. Pnevmatikakis, Simons Foundation, 2015, 2016
 % this version: Gal Mishne, 2019
+%
+% Alex Estrada - Update mergeWrapper, 2022
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% Input parsing/testing
@@ -67,6 +69,8 @@ if nargin < 3 || isempty(patches)
     fprintf('done.\n')
 end
 n_patches = length(patches);
+
+% fprintf('n_patches: %f.\n', n_patches)
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% running GraFT on each patch
@@ -110,9 +114,9 @@ end
 [Dm, Sm] = reorderDictionary(Y, Dm, Sm);                                   % Reorders te dictionary elements based on magnitude
 
 if nargout > 3
-    RESULTS2.S   = S;                                                      % Output the spatial maps
-    RESULTS2.D   = D;                                                      % Output the time-traces
-    varargout{1} = RESULTS2;                                               % Place the output struct as the output
+    RESULTS2.S   = S;
+    RESULTS2.D   = D;
+    varargout{1} = RESULTS2;
     clear RESULTS2
 end
 
@@ -246,15 +250,16 @@ end
 fprintf('Running full GraFT to merge components...\n')
 tic
 if mergeOpt == 1
-    Dm = D;                                                                % Create a dummy variable for the time traces
-    Sm = S;                                                                % Create a dummy variable for the spatiual maps
-    for i = 1:params.mergeIters                                            % Loop over merge iterations
-        fprintf('Starting iteration %d...\n',i);tic;                       
-        params.verbose = 10;                                               % Set verbosity level
+    Dm = D;
+    Sm = S;
+    
+    for i = 1:params.mergeIters
+        fprintf('Starting iteration %d...\n',i);tic;
+        params.verbose = 10;
         gcp
         [Sm, W] = dictionaryRWL1SF(Yr,Dm,full_corr_kern,params,Sm);        % Infer coefficients given the data and dictionary
         fprintf('...Updated coefficients in %f seconds.\n', toc); tic
-        Dm = dictionary_update(Yr.',Dm, Sm.',params.step_s,params);  % Take a gradient step with respect to the dictionary
+        Dm = dictionary_update(Yr.',Dm, Sm.',params.step_s,params);        % Take a gradient step with respect to the dictionary
         fprintf('...Updated dictionary in %f seconds.\n', toc);
      end
      if ~params.normalizeSpatial
@@ -266,10 +271,8 @@ if mergeOpt == 1
     end
 else
     options.merge_thr =0.85;
-    [Dm,Sm] = mergeGraFTdictionaries(D,S,options,params.normalizeSpatial); % Merge the dictionaries
-%     if recalcOpt
-%         Sm      = reCalcCoefSparse(Yr,Dm,Sm,params.lambda,true,'lasso');   % Recalculate the coefficients with the LASSO
-%     end
+    [Dm,Sm] = mergeGraFTdictionaries(D,S,options,params.normalizeSpatial);
+    %Sm      = reCalcCoefSparse(Yr, Dm, Sm, params.lambda, true, 'lasso');     % Recalculation of coefs not required. 
 end
 
 
