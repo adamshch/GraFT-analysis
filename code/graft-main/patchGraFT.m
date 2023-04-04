@@ -241,10 +241,13 @@ end
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% Wrapper for merge code to merge components
 
-function [Sm, Dm] = mergeWrapper(S, D, params, Yr, full_corr_kern, mergeOpt)
+function [Sm, Dm] = mergeWrapper(S, D, params, Yr, full_corr_kern, mergeOpt, varargin)
+
+if nargin > 6; recalcOpt = varargin{1};
+else;          recalcOpt = false;
+end
 
 fprintf('Running full GraFT to merge components...\n')
-
 tic
 if mergeOpt == 1
     Dm = D;

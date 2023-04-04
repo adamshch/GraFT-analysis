@@ -10,6 +10,27 @@ function [S, tau_mat] = dictionaryRWL1SF(mov, D, corr_kern, params, S, varargin)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% Parse inputs
 
+if iscell(D)
+    if numel(D) == 1
+        Phi = 1;
+        D   = D{1};
+        DTD = double(2*(D.'*D));
+    elseif numel(D) == 2
+        Phi = 1;
+        DTD = D{2};
+        D   = D{1};
+    elseif numel(D) == 3
+        Phi = D{3};
+        DTD = D{2};
+        D   = D{1};
+    else
+        error('Bad values for dictionary D input')
+    end
+else
+    DTD = double(2*(D.'*D));
+end
+D2 = Phi*D;
+
 [params, lambda, beta, maxiter, tolerance, nonneg, verbose, ...
                                 likely_form] = paramCheckAll(params, mov); % Parse the params struct to extract all the needed parameters
 
@@ -20,7 +41,7 @@ end
 if nargin > 6; solveUse = varargin{2};
 else;          solveUse = 'quadprog';
 end
-solveUse
+% solveUse
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% Set Initializations
 if size(mov,3)>1

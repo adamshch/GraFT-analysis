@@ -61,6 +61,10 @@ S = [];                                                                    % Ini
 % Phi = diag(1./sqrt(sum(abs(Phi.^2),2)))*Phi;
 Phi = 1;
 
+% Phi = randn(3*size(dict_out,2),size(dict_out,1));
+% Phi = diag(1./sqrt(sum(abs(Phi.^2),2)))*Phi;
+Phi = 1;
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% Run dictionary learning - Main loop
 
@@ -68,9 +72,12 @@ while (n_iter <= params.max_learn)&&(dDict > params.learn_eps)             % Whi
     
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     %% First step is to compute the presence coefficients from the dictionary:
-    
     tic;
-    [S, W] = dictionaryRWL1SF(data_obj,dict_out,corr_kern,params,S,Phi,solveUse);   % Infer coefficients given the data and dictionary
+    DTD = dict_out.'*dict_out; % Precompute the Hessian
+%     D2  = Phi*dict_out;
+    [S, W] = dictionaryRWL1SF(data_obj,{dict_out,DTD,Phi},corr_kern,params,S);
+    %   [S, W] = dictionaryRWL1SF(data_obj,dict_out,corr_kern,params,S);   % Infer coefficients given the data and dictionary
+    %[S, W] = dictionaryRWL1SF(data_obj,dict_out,corr_kern,params,S,Phi,solveUse);   % Infer coefficients given the data and dictionary
     T1 = toc;
     
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

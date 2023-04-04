@@ -68,14 +68,11 @@ elseif strcmp(opts.grad_type, 'full_ls_cor')
         dict_new = zeros(size(dict_old));                                  % Initialize the dictionary
         Nneur    = size(dict_old,2);
         Ntime    = size(dict_old,1);   
-        H = 2*double(coef_vals*coef_vals.' + l4.^2 +...
-                            (l3.^2+l2.^2-l4.^2)*eye(Nneur));
-%         tf_opts.tol        = 1e-3;                                                     % Set TFOCS tolerance
-%         tf_opts.printEvery = 0;  
+        H = 2*double(coef_vals*coef_vals.' + l4.^2 + (l3.^2+l2.^2-l4.^2)*eye(Nneur));
         parfor ll = 1:Ntime
-            b = -2*double(coef_vals*x_im(ll,:).' + l3.^2*dict_old(ll,:).');
-            dict_new(ll,:) = quadprog(H, b,[],[],[],[],zeros(size(dict_new(ll,:),2),1),...
-                          [],dict_old(ll,:),qp_opts); % Solve the least-squares via a nonnegative program on a per-dictionary level        
+            dict_new(ll,:) = quadprog(H,...
+                  -2*double(coef_vals*x_im(ll,:).' + l3.^2*dict_old(ll,:).'),...
+                          [],[],[],[],zeros(size(dict_new(ll,:),2),1),[],dict_old(ll,:),qp_opts); % Solve the least-squares via a nonnegative program on a per-dictionary level
         end
     else
         dict_new = x_im*(coef_vals.')/(coef_vals*(coef_vals.') ...
