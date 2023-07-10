@@ -19,6 +19,7 @@ With many different ways to load data, GraFT is now compatible with Neurodata Wi
 * [Statistics and Machine Learning Toolbox](https://www.mathworks.com/products/statistics.html) (required)
 * [Parallel Computing Toolbox](https://www.mathworks.com/products/parallel-computing.html) (highly recommended)
 * [Model Predictive Control Toolbox](https://www.mathworks.com/help/mpc/index.html?s_tid=CRUX_lftnav) (QP, recommended)
+* [Wavelet Toolbox](https://www.mathworks.com/help/wavelet/getting-started-with-wavelet-toolbox.html) (Denoising, pre-processing recommended)
 * [NoRMCorre](https://github.com/flatironinstitute/NoRMCorre) (Motion Correction, optional)
 * [MovieSlider](https://github.com/sakoay/MovieSlider) (Plotting, optional)
 * [MatNWB](https://github.com/NeurodataWithoutBorders/matnwb) (Optional)
