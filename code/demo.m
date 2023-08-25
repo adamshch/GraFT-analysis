@@ -28,6 +28,10 @@ params.lambda    = 0.7;                                                   % Spar
 params.lamForb   = 0.2;                                                    % parameter to control how much to weigh extra time-traces
 params.lamCorr   = 0.1;                                                    % Parameter to prevent overly correlated dictionary elements 
 params.n_dict    = 15;                                                     % Choose how many components (per patch) will be initialized. Note: the final number of coefficients may be less than this due to lack of data variance and merging of components.
+
+% Compression parameters
+params.time_compression = 1;
+
 params.patchSize = 50;                                                     % Choose the size of the patches to break up the image into (squares with patchSize pixels on each side)
 
 Xsel = 151:350;                                                            % Can sub-select a portion of the full FOV to test on a small section before running on the full dataset
@@ -64,10 +68,10 @@ end
 data.dirname = fullfile(data.nam, 'images');                               % Get the directory name
 data.files   = dir(fullfile(data.dirname,'*.tiff'));                       % Get all of  the filenames (look for tiff files)
 data.fname   = fullfile(data.dirname, data.files(1).name);                 % Create a full-file name to point to the first file (used to get movie sizes)
-data.Fsim    = imread(data.fname);                                         % Read in the first file
-data.Fsim    = zeros(size(data.Fsim,1),size(data.Fsim,2),...
-                                                    length(data.files));   % Initialize the data array
- 
+%data.Fsim    = imread(data.fname);                                         % Read in the first file
+%data.Fsim    = zeros(size(data.Fsim,1),size(data.Fsim,2),...
+%                                                    length(data.files));   % Initialize the data array
+data.Fsim = load('~/GraFT-analysis-orig/code/naomiFsim.mat') 
 for ll = 1:length(data.files)
     fname = fullfile(data.dirname, data.files(ll).name);
     data.Fsim(:,:,ll) = imread(fname);
@@ -154,10 +158,10 @@ if params.normalizeSpatial
 else
     normType = 'temporal';
 end
-saveName = sprintf('nfRun_%d_%d_%d_%d_%s.mat', ...
+saveName = sprintf('nfRun_%d_%d_%d_%d_%d_%s.mat', ...
                 round(100*params.lambda), round(100*params.lamForb),...
                 round(100*params.lamCorr), round(100*params.lamCont),...
-                                                                normType); % Set the save name to store results in
+		   params.time_compression, normType); % Set the save name to store results in
 fprintf('Saving results to %s...\n', saveName)
 save(fullfile(saveDir,saveName),'S','D','params','-v7.3')                  % Save the results
 

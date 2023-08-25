@@ -26,7 +26,7 @@ end
 if license('test','MPC_Toolbox');    solveUse = 'mpc';
 else;                                solveUse = 'quadprog';
 end
-
+%solveUse = 'quadprog';
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% Check spatial smoothing kernel
 
@@ -66,16 +66,32 @@ Phi = 1;
 Phi = 1;
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%% Run dictionary learning - Main loop
+%% Pre-process time compression
+if params.time_compression < 1
+  [time_data_obj, time_mat] = time_compress(data_obj, ceil((size(data_obj, 2) * params.time_compression)));
+  time_dict_out = (time_mat * dict_out);
+end
 
+Smat = [];
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% 
+%% Run dictionary learning - Main loop
 while (n_iter <= params.max_learn)&&(dDict > params.learn_eps)             % While the ending conditions are not yet met...
     
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     %% First step is to compute the presence coefficients from the dictionary:
     tic;
-    DTD = dict_out.'*dict_out; % Precompute the Hessian
+    if (params.time_compression < 1)
+      if (n_iter <= 1)
+       DTD = time_dict_out.'*time_dict_out; % Precompute the Hessian   
+       end
+       [S, W] = dictionaryRWL1SF(time_data_obj,{time_dict_out,DTD,Phi},corr_kern,params,S);   
+    else
+	DTD = dict_out.'*dict_out; % Precompute the Hessian   
+	[S, W] = dictionaryRWL1SF(data_obj,{dict_out,DTD,Phi},corr_kern,params,S);   
+    end
 %     D2  = Phi*dict_out;
-    [S, W] = dictionaryRWL1SF(data_obj,{dict_out,DTD,Phi},corr_kern,params,S);
+%    [S, W] = dictionaryRWL1SF(data_obj,{dict_out,DTD,Phi},corr_kern,params,S);
     %   [S, W] = dictionaryRWL1SF(data_obj,dict_out,corr_kern,params,S);   % Infer coefficients given the data and dictionary
     %[S, W] = dictionaryRWL1SF(data_obj,dict_out,corr_kern,params,S,Phi,solveUse);   % Infer coefficients given the data and dictionary
     T1 = toc;
@@ -103,18 +119,38 @@ while (n_iter <= params.max_learn)&&(dDict > params.learn_eps)             % Whi
     
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     %% Second step is to update the dictionary:
-    
-    dict_old = dict_out;                                                   % Save the old dictionary for metric calculations
+    if (params.time_compression < 1)
+      dict_old = time_dict_out;                                                   % Save the old dictionary for metric calculations
+    else
+      dict_old = dict_out;
+    end
+    % Process compression before dictionary_update
+    %if (params.space_compression < 1 && n_iter == 1)
+    %  [sketch_data_obj, sketch_S, Smat] = space_compress(data_obj, S, compressed_pixel);
+    %elseif (params.space_compression < 1)
+    %  sketch_data_obj = Smat * data_obj;
+    %  sketch_S = Smat * S
+    %end
+
     tic;
-    dict_out = dictionary_update(data_obj.',dict_out, S.',step_s,params);  % Take a gradient step with respect to the dictionary
+    if (params.time_compression < 1)
+	 
+       %time_dict_out = (time_mat * dict_out);
+       time_dict_out = dictionary_update(time_data_obj.',time_dict_out, S.',step_s,params);
+    else
+      dict_out = dictionary_update(data_obj.',dict_out, S.',step_s,params);  % Take a gradient step with respect to the dictionary
+    end
     T2 = toc;
     
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     %% Some prelude stuff and outputs for verification
     
     step_s   = step_s*params.step_decay;                                   % Update the step size
-    dDict    = norm(vec(dict_out - dict_old))./norm(vec(dict_old));        % Calculate the difference in dictionary coefficients
-    
+    if (params.time_compression < 1)
+    dDict    = norm(vec(time_dict_out - dict_old))./norm(vec(dict_old));        % Calculate the difference in dictionary coefficients
+    else
+      dDict    = norm(vec(dict_out - dict_old))./norm(vec(dict_old));  
+    end
     verbPrint(params.verbose, 1, ...
            sprintf('Iteration %d: delta dictionary is %f. (Tsp = %f, Tdu = %f)', ...
            n_iter, dDict, T1, T2))% Some outputs
@@ -130,7 +166,14 @@ while (n_iter <= params.max_learn)&&(dDict > params.learn_eps)             % Whi
         extras.wghtMap = cat(4,extras.wghtMap, W);                         % Save current weight maps
     end
 end
-
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% Resize compression
+if (params.time_compression < 1)
+  [S, W] = dictionaryRWL1SF(time_data_obj,{time_dict_out,DTD,Phi},corr_kern,params,S); 
+  %[S, W] = dictionaryRWL1SF(time_data_obj,time_dict_out,corr_kern,params,S,Phi,solveUse);
+  inverted = pinv(time_mat);
+  dict_out = dictionary_update(data_obj.', inverted * time_dict_out, S.', step_s, params);
+end
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% Some post-processing
 % Re-compute the presence coefficients from the dictionary:
@@ -248,3 +291,15 @@ end
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+function [Y, S] = time_compress(X, t)
+% X: 2d matrix (pixel x pixel) x time
+% t: compressed time dimension size
+% Y: 2d matriz (pixel x pixel) x t image
+% S: sketched matrix t x time sketching matrix
+Xt = X.';
+dim = size(Xt);
+S = randn(t, dim(1));
+Y = S * Xt;
+Y = Y.';
+end
+

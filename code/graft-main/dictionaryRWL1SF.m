@@ -89,7 +89,7 @@ for kk = 1:params.numreps
     end
     verbPrint(verbose, 2, sprintf('Starting iteration %d inference.',kk))  % Some outputs
     % Run SPIRAL-TAP or LASSO on each vector:
-    
+    %for ll = 1:n_pts
     parfor ll = 1:n_pts                                                    % Loop through all the pixels
         switch likely_form                                                 % Find which noise function is selected
             case 'poisson'                                                 % Poisson noise --> use SPIRAL-TAP
