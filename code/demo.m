@@ -29,7 +29,7 @@ params.lamForb   = 0.2;                                                    % par
 params.lamCorr   = 0.1;                                                    % Parameter to prevent overly correlated dictionary elements 
 params.n_dict    = 15;                                                     % Choose how many components (per patch) will be initialized. Note: the final number of coefficients may be less than this due to lack of data variance and merging of components.
 
-% Compression parameters
+% Compression parameters. Setting time_compression = 1 is default size
 params.time_compression = 1;
 
 params.patchSize = 50;                                                     % Choose the size of the patches to break up the image into (squares with patchSize pixels on each side)
