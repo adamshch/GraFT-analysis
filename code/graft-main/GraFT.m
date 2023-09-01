@@ -261,7 +261,7 @@ function params = checkAllParameters(params)
     dParams.updateEmbed = false;                                           % Default to not updateing the graph embedding based on changes to the coefficients
     dParams.mask        = [];                                              % for masked images (widefield data)
     dParams.normalizeSpatial = false;                                      % default behavior - time-traces are unit norm. when true, spatial maps normalized to max one and time-traces are not normalized
-    
+    dParams.time_compression = 1;
     params = setParams(dParams, params);
     
     if ~isempty(params.mask)
